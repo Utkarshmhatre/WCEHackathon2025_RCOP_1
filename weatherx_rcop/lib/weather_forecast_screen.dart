@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
 import 'dart:ui';
+import 'package:provider/provider.dart';
 import '../services/weather_service.dart';
 import 'package:intl/intl.dart';
+import 'theme_provider.dart';
 
-class WeatherPage extends StatefulWidget {
-  const WeatherPage({super.key});
+class WeatherForecastScreen extends StatefulWidget {
+  const WeatherForecastScreen({super.key});
 
   @override
-  State<WeatherPage> createState() => _WeatherPageState();
+  State<WeatherForecastScreen> createState() => _WeatherPageState();
 }
 
-class _WeatherPageState extends State<WeatherPage>
+class _WeatherPageState extends State<WeatherForecastScreen>
     with SingleTickerProviderStateMixin {
   // API service
   final _weatherService = WeatherService('4ff6eddbdab716e97b0ba1a6a87fd510');
@@ -132,27 +134,41 @@ class _WeatherPageState extends State<WeatherPage>
     }
   }
 
-  // Background gradient based on weather
-  List<Color> getWeatherGradient(String? condition) {
-    if (condition == null) return [Color(0xFF87CEEB), Color(0xFF1E90FF)];
+  // Background gradient based on weather and theme
+  List<Color> getWeatherGradient(String? condition, bool isDarkMode) {
+    if (condition == null) {
+      return isDarkMode
+          ? [Color(0xFF1A1A2E), Color(0xFF16213E)]
+          : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
+    }
 
     switch (condition.toLowerCase()) {
       case 'clouds':
-        return [Color(0xFFA9A9A9), Color(0xFF778899)];
+        return isDarkMode
+            ? [Color(0xFF2C3E50), Color(0xFF34495E)]
+            : [Color(0xFFA9A9A9), Color(0xFF778899)];
       case 'mist':
       case 'smoke':
       case 'haze':
       case 'dust':
       case 'fog':
-        return [Color(0xFFD3D3D3), Color(0xFF696969)];
+        return isDarkMode
+            ? [Color(0xFF3E4551), Color(0xFF2C3E50)]
+            : [Color(0xFFD3D3D3), Color(0xFF696969)];
       case 'rain':
       case 'drizzle':
       case 'shower rain':
-        return [Color(0xFF4682B4), Color(0xFF000080)];
+        return isDarkMode
+            ? [Color(0xFF1A237E), Color(0xFF0D47A1)]
+            : [Color(0xFF4682B4), Color(0xFF000080)];
       case 'clear':
-        return [Color(0xFF87CEEB), Color(0xFF1E90FF)];
+        return isDarkMode
+            ? [Color(0xFF0D47A1), Color(0xFF1565C0)]
+            : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
       default:
-        return [Color(0xFF87CEEB), Color(0xFF1E90FF)];
+        return isDarkMode
+            ? [Color(0xFF1A1A2E), Color(0xFF16213E)]
+            : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
     }
   }
 
@@ -163,7 +179,7 @@ class _WeatherPageState extends State<WeatherPage>
   }
 
   // Current location weather display
-  Widget _buildCurrentLocationWeather() {
+  Widget _buildCurrentLocationWeather(bool isDarkMode) {
     if (_isLoadingCurrent) {
       return Container(
         height: 300,
@@ -171,15 +187,14 @@ class _WeatherPageState extends State<WeatherPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset(
-              'assets/loading.json', // An animated loading indicator
-              height: 120,
-              width: 120,
-            ),
+            Lottie.asset('assets/loading.json', height: 120, width: 120),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "Fetching your location's weather...",
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white70 : Colors.white70,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -193,12 +208,19 @@ class _WeatherPageState extends State<WeatherPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.location_off, size: 70, color: Colors.white70),
+            Icon(
+              Icons.location_off,
+              size: 70,
+              color: isDarkMode ? Colors.white70 : Colors.white70,
+            ),
             const SizedBox(height: 16),
             Text(
               _currentLocationError!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(
+                color: isDarkMode ? Colors.white : Colors.white,
+                fontSize: 16,
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -206,7 +228,7 @@ class _WeatherPageState extends State<WeatherPage>
               icon: const Icon(Icons.refresh),
               label: const Text('Try Again'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white24,
+                backgroundColor: isDarkMode ? Colors.white10 : Colors.white24,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -219,9 +241,12 @@ class _WeatherPageState extends State<WeatherPage>
       return Container(
         height: 300,
         alignment: Alignment.center,
-        child: const Text(
+        child: Text(
           "No weather data available",
-          style: TextStyle(color: Colors.white, fontSize: 18),
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.white,
+            fontSize: 18,
+          ),
         ),
       );
     }
@@ -236,12 +261,12 @@ class _WeatherPageState extends State<WeatherPage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: getWeatherGradient(weather.mainCondition),
+            colors: getWeatherGradient(weather.mainCondition, isDarkMode),
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.2),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -469,10 +494,16 @@ class _WeatherPageState extends State<WeatherPage>
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
     // Get the main background gradient based on current weather
     List<Color> backgroundGradient =
         _currentLocationWeather != null
-            ? getWeatherGradient(_currentLocationWeather.mainCondition)
+            ? getWeatherGradient(
+              _currentLocationWeather.mainCondition,
+              isDarkMode,
+            )
             : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
 
     return Scaffold(
@@ -518,7 +549,7 @@ class _WeatherPageState extends State<WeatherPage>
                 // Current Location Weather Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildCurrentLocationWeather(),
+                  child: _buildCurrentLocationWeather(isDarkMode),
                 ),
                 const SizedBox(height: 30),
 
