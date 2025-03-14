@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'dart:async';
 import '../services/weather_service.dart';
 
 class WeatherPage extends StatefulWidget {
@@ -20,6 +21,9 @@ class _WeatherPageState extends State<WeatherPage> {
   dynamic _weather;
   bool _isLoading = false;
   String? _errorMessage;
+
+  // debounce timer
+  Timer? _debounce;
 
   // fetch weather for current location
   _fetchWeather() async {
@@ -69,7 +73,7 @@ class _WeatherPageState extends State<WeatherPage> {
     }
   }
 
-  //weather animations
+  // weather animations
   String getWeatherAminations(String? mainCondition) {
     if (mainCondition == null) return 'assets/sunny.json';
 
@@ -95,7 +99,7 @@ class _WeatherPageState extends State<WeatherPage> {
       case 'clear':
         return 'assets/clear_sky.json';
       default:
-        return 'assets/sunny.json';
+        return 'assets/clear_sky.json';
     }
   }
 
@@ -107,6 +111,7 @@ class _WeatherPageState extends State<WeatherPage> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _locationController.dispose();
     super.dispose();
   }
@@ -114,103 +119,205 @@ class _WeatherPageState extends State<WeatherPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Search bar
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _locationController,
-                      decoration: InputDecoration(
-                        hintText: 'Enter city name',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      onSubmitted: (_) => _searchWeather(),
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: _searchWeather,
-                    child: Text('Search'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ],
-              ),
-
-              // My location button
-              TextButton.icon(
-                onPressed: _fetchWeather,
-                icon: Icon(Icons.my_location),
-                label: Text('Use My Location'),
-              ),
-
-              // Error message if any
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red),
+      // Modern gradient background
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFAFAFA), Color(0xFFE0F7FA)],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Text(
+                  'WeatherX',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
                   ),
                 ),
+                const SizedBox(height: 24),
 
-              // Loading indicator or weather data
-              Expanded(
-                child:
-                    _isLoading
-                        ? Center(child: CircularProgressIndicator())
-                        : Center(
-                          child:
-                              _weather == null
-                                  ? Text("No weather data available")
-                                  : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      // city name
-                                      Text(
-                                        _weather.cityname,
-                                        style: TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 20),
+                // Search bar with autocomplete
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Autocomplete<String>(
+                      optionsBuilder: (
+                        TextEditingValue textEditingValue,
+                      ) async {
+                        if (textEditingValue.text.length < 3) {
+                          return const Iterable<String>.empty();
+                        }
+                        final suggestions = await _weatherService
+                            .getCitySuggestions(textEditingValue.text);
+                        return suggestions;
+                      },
+                      onSelected: (String selection) {
+                        _locationController.text = selection.split(',')[0];
+                        _searchWeather();
+                      },
+                      fieldViewBuilder: (
+                        context,
+                        controller,
+                        focusNode,
+                        onFieldSubmitted,
+                      ) {
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: InputDecoration(
+                            hintText: 'Enter city name',
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                          onSubmitted: (_) => _searchWeather(),
+                        );
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4.0,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              width: MediaQuery.of(context).size.width - 48,
+                              constraints: const BoxConstraints(maxHeight: 200),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  final String option = options.elementAt(
+                                    index,
+                                  );
+                                  return ListTile(
+                                    title: Text(option),
+                                    onTap: () {
+                                      onSelected(option);
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-                                      // animation
-                                      Lottie.asset(
-                                        getWeatherAminations(
-                                          _weather.mainCondition,
-                                        ),
-                                        height: 200,
-                                      ),
-                                      SizedBox(height: 20),
-
-                                      // temperature
-                                      Text(
-                                        '${_weather.temperature.round()}°C',
-                                        style: TextStyle(fontSize: 32),
-                                      ),
-                                      SizedBox(height: 10),
-
-                                      // weather condition
-                                      Text(
-                                        _weather.mainCondition,
-                                        style: TextStyle(fontSize: 20),
-                                      ),
-                                    ],
-                                  ),
+                // Buttons Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _searchWeather,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-              ),
-            ],
+                        icon: const Icon(Icons.search),
+                        label: const Text('Search'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _fetchWeather,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('My Location'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Error message
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                // Weather results (refined without an extra white container)
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _weather == null
+                    ? const Center(child: Text("No weather data available"))
+                    : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Temperature and main condition section
+                        Text(
+                          '${_weather.temperature.round()}°C',
+                          style: Theme.of(context).textTheme.headlineLarge
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Main condition
+                        Text(
+                          _weather.mainCondition,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+
+                        // City name (updated to use headlineMedium)
+                        Text(
+                          _weather.cityname,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Weather Animation
+                        Lottie.asset(
+                          getWeatherAminations(_weather.mainCondition),
+                          height: 150,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+              ],
+            ),
           ),
         ),
       ),

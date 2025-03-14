@@ -41,4 +41,27 @@ class WeatherService {
     String city = placemarks[0].locality ?? "";
     return city;
   }
+
+  Future<List<String>> getCitySuggestions(String query) async {
+    if (query.length < 3) return [];
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://api.openweathermap.org/geo/1.0/direct?q=$query&limit=5&appid=$apikey',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        return data
+            .map((city) => "${city['name']}, ${city['country']}")
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error getting suggestions: $e');
+      return [];
+    }
+  }
 }
