@@ -134,14 +134,67 @@ class _WeatherPageState extends State<WeatherForecastScreen>
     }
   }
 
-  // Background gradient based on weather and theme
-  List<Color> getWeatherGradient(String? condition, bool isDarkMode) {
+  // Enhanced background gradient based on both weather and temperature
+  // Modified for more granular temperature ranges suitable for Indian climate
+  List<Color> getWeatherGradient(
+    String? condition,
+    bool isDarkMode, [
+    double? temperature,
+  ]) {
     if (condition == null) {
       return isDarkMode
           ? [Color(0xFF1A1A2E), Color(0xFF16213E)]
           : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
     }
 
+    // More granular temperature based theme adjustments for Indian climate
+    if (temperature != null) {
+      // Very cold (below 5°C) - Northern mountainous regions
+      if (temperature < 5) {
+        return isDarkMode
+            ? [Color(0xFF0D324D), Color(0xFF0F2027)]
+            : [Color(0xFFB5D8F7), Color(0xFF7CB9E8)];
+      }
+      // Cold (5°C to 15°C) - North Indian winter
+      else if (temperature < 15) {
+        return isDarkMode
+            ? [Color(0xFF2C3E50), Color(0xFF1E3B70)]
+            : [Color(0xFF87CEEB), Color(0xFF6CA6CD)];
+      }
+      // Pleasant/Mild (15°C to 25°C) - Comfortable weather
+      else if (temperature < 25) {
+        return isDarkMode
+            ? [Color(0xFF2E8B57), Color(0xFF3CB371)]
+            : [Color(0xFF90EE90), Color(0xFF98FB98)];
+      }
+      // Warm (25°C to 30°C) - Common Indian temperatures
+      else if (temperature < 30) {
+        return isDarkMode
+            ? [Color(0xFF614385), Color(0xFF516395)]
+            : [Color(0xFF87CEFA), Color(0xFF00BFFF)];
+      }
+      // Hot (30°C to 35°C) - Summer in many Indian cities
+      else if (temperature < 35) {
+        return isDarkMode
+            ? [Color(0xFFFF8C00), Color(0xFFFF4500)]
+            : [Color(0xFFFFD700), Color(0xFFFFA500)];
+      }
+      // Very Hot (35°C to 40°C) - Peak summer
+      else if (temperature < 40) {
+        return isDarkMode
+            ? [Color(0xFFB22222), Color(0xFF8B0000)]
+            : [Color(0xFFFF8C00), Color(0xFFFF4500)];
+      }
+      // Extreme Heat (Above 40°C) - Common in parts of India during summer
+      else {
+        return isDarkMode
+            ? [Color(0xFF8B0000), Color(0xFF800000)]
+            : [Color(0xFFDC143C), Color(0xFF8B0000)];
+      }
+    }
+
+    // Default weather-based gradients if temperature-based doesn't apply
+    // or for temperatures between 10-20°C (moderate)
     switch (condition.toLowerCase()) {
       case 'clouds':
         return isDarkMode
@@ -161,6 +214,14 @@ class _WeatherPageState extends State<WeatherForecastScreen>
         return isDarkMode
             ? [Color(0xFF1A237E), Color(0xFF0D47A1)]
             : [Color(0xFF4682B4), Color(0xFF000080)];
+      case 'thunderstorm':
+        return isDarkMode
+            ? [Color(0xFF1A1A3A), Color(0xFF1C1C3A)]
+            : [Color(0xFF4B0082), Color(0xFF483D8B)];
+      case 'snow':
+        return isDarkMode
+            ? [Color(0xFF3E4551), Color(0xFF6A7178)]
+            : [Color(0xFFE0FFFF), Color(0xFFAFEEEE)];
       case 'clear':
         return isDarkMode
             ? [Color(0xFF0D47A1), Color(0xFF1565C0)]
@@ -169,6 +230,43 @@ class _WeatherPageState extends State<WeatherForecastScreen>
         return isDarkMode
             ? [Color(0xFF1A1A2E), Color(0xFF16213E)]
             : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
+    }
+  }
+
+  // Get temperature color for text and accents
+  // Modified for more granular temperature ranges suitable for Indian climate
+  Color getTemperatureColor(double temperature, bool isDarkMode) {
+    // Very cold (below 5°C)
+    if (temperature < 5) {
+      return isDarkMode ? Colors.lightBlue[100]! : Colors.blue[900]!;
+    }
+    // Cold (5°C to 15°C)
+    else if (temperature < 15) {
+      return isDarkMode ? Colors.lightBlue[300]! : Colors.blue[600]!;
+    }
+    // Pleasant/Mild (15°C to 20°C)
+    else if (temperature < 20) {
+      return isDarkMode ? Colors.green[200]! : Colors.green[700]!;
+    }
+    // Comfortable (20°C to 25°C)
+    else if (temperature < 25) {
+      return isDarkMode ? Colors.green[300]! : Colors.green[500]!;
+    }
+    // Warm (25°C to 30°C)
+    else if (temperature < 30) {
+      return isDarkMode ? Colors.amber[300]! : Colors.amber[600]!;
+    }
+    // Hot (30°C to 35°C)
+    else if (temperature < 35) {
+      return isDarkMode ? Colors.orange[300]! : Colors.orange[700]!;
+    }
+    // Very Hot (35°C to 40°C)
+    else if (temperature < 40) {
+      return isDarkMode ? Colors.deepOrange[300]! : Colors.deepOrange[700]!;
+    }
+    // Extreme Heat (above 40°C)
+    else {
+      return isDarkMode ? Colors.red[300]! : Colors.red[900]!;
     }
   }
 
@@ -252,6 +350,7 @@ class _WeatherPageState extends State<WeatherForecastScreen>
     }
 
     final weather = _currentLocationWeather;
+    final tempColor = getTemperatureColor(weather.temperature, isDarkMode);
 
     return FadeTransition(
       opacity: _fadeController,
@@ -261,7 +360,11 @@ class _WeatherPageState extends State<WeatherForecastScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: getWeatherGradient(weather.mainCondition, isDarkMode),
+            colors: getWeatherGradient(
+              weather.mainCondition,
+              isDarkMode,
+              weather.temperature,
+            ),
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
@@ -322,13 +425,36 @@ class _WeatherPageState extends State<WeatherForecastScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${weather.temperature.round()}°',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 72,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${weather.temperature.round()}°',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 72,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: tempColor.withOpacity(0.6),
+                                  blurRadius: 15,
+                                  offset: Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            margin: EdgeInsets.only(top: 12),
+                            child: Text(
+                              'C',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 26,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -336,17 +462,39 @@ class _WeatherPageState extends State<WeatherForecastScreen>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: tempColor.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: tempColor.withOpacity(0.3),
+                            width: 1,
+                          ),
                         ),
                         child: Text(
                           weather.mainCondition,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _buildWeatherDetail(
+                            Icons.water_drop_outlined,
+                            '${weather.humidity}%',
+                            'Humidity',
+                            Colors.white,
+                          ),
+                          SizedBox(width: 16),
+                          _buildWeatherDetail(
+                            Icons.air,
+                            '${weather.windSpeed} m/s',
+                            'Wind',
+                            Colors.white,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -366,6 +514,37 @@ class _WeatherPageState extends State<WeatherForecastScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildWeatherDetail(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color.withOpacity(0.7), size: 14),
+            SizedBox(width: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          label,
+          style: TextStyle(color: color.withOpacity(0.7), fontSize: 12),
+        ),
+      ],
     );
   }
 
@@ -417,6 +596,7 @@ class _WeatherPageState extends State<WeatherForecastScreen>
     }
 
     final weather = _searchedCityWeather;
+    final tempColor = getTemperatureColor(weather.temperature, false);
 
     return FadeTransition(
       opacity: _fadeController,
@@ -424,7 +604,15 @@ class _WeatherPageState extends State<WeatherForecastScreen>
         margin: const EdgeInsets.only(top: 20),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: getWeatherGradient(
+              weather.mainCondition,
+              false,
+              weather.temperature,
+            ),
+          ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -442,7 +630,7 @@ class _WeatherPageState extends State<WeatherForecastScreen>
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 20),
@@ -457,12 +645,32 @@ class _WeatherPageState extends State<WeatherForecastScreen>
                 ),
                 Column(
                   children: [
-                    Text(
-                      '${weather.temperature.round()}°C',
-                      style: const TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${weather.temperature.round()}°',
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: tempColor.withOpacity(0.6),
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          'C',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -471,18 +679,46 @@ class _WeatherPageState extends State<WeatherForecastScreen>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withOpacity(0.1),
+                        color: tempColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: tempColor.withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Text(
                         weather.mainCondition,
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Colors.blueAccent,
+                          color: Colors.white,
                         ),
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildWeatherDetail(
+                  Icons.water_drop_outlined,
+                  '${weather.humidity}%',
+                  'Humidity',
+                  Colors.white,
+                ),
+                _buildWeatherDetail(
+                  Icons.air,
+                  '${weather.windSpeed} m/s',
+                  'Wind',
+                  Colors.white,
+                ),
+                _buildWeatherDetail(
+                  Icons.thermostat_outlined,
+                  '${weather.feelsLike.round()}°C',
+                  'Feels Like',
+                  Colors.white,
                 ),
               ],
             ),
@@ -497,12 +733,13 @@ class _WeatherPageState extends State<WeatherForecastScreen>
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
 
-    // Get the main background gradient based on current weather
+    // Get the main background gradient based on current weather and temperature
     List<Color> backgroundGradient =
         _currentLocationWeather != null
             ? getWeatherGradient(
               _currentLocationWeather.mainCondition,
               isDarkMode,
+              _currentLocationWeather.temperature,
             )
             : [Color(0xFF87CEEB), Color(0xFF1E90FF)];
 
