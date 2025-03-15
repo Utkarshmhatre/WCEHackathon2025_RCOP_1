@@ -7,6 +7,8 @@ import 'site.dart';
 import 'theme_provider.dart';
 
 class WeatherStationsScreen extends StatefulWidget {
+  const WeatherStationsScreen({super.key});
+
   @override
   _ApiPageState createState() => _ApiPageState();
 }

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui'; // Add this import for ImageFilter
 import 'weather_forecast_screen.dart';
 import 'air_quality_screen.dart';
 import 'weather_stations_screen.dart';
+import 'weather_map_screen.dart'; // Add this import
+import 'air_quality_map.dart'; // Add this import
 import 'theme_provider.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -21,12 +26,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     WeatherForecastScreen(),
     AirQualityScreen(),
     WeatherStationsScreen(),
+    WeatherMap(), // Add Weather Map screen
+    AirQualityMap(), // Add Air Quality Map screen
   ];
 
   final List<String> _titles = [
     "Weather Forecast",
     "Air Quality",
     "Weather Stations",
+    "Weather Map", // Add title for Weather Map
+    "Air Quality Map", // Add title for Air Quality Map
   ];
 
   @override
@@ -62,7 +71,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
-    final bgColor = isDarkMode ? Color(0xFF1A1A2E) : Color(0xFF87CEEB);
+    final bgColor =
+        isDarkMode ? const Color(0xFF1A1A2E) : const Color(0xFF87CEEB);
+
+    // Determine if current screen is a map screen
+    final bool isMapScreen = _currentIndex == 3 || _currentIndex == 4;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -71,23 +84,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // Content Area with PageView
           Positioned.fill(
             top:
-                MediaQuery.of(context).padding.top +
-                80, // Account for custom app bar
+                isMapScreen
+                    ? MediaQuery.of(context)
+                        .padding
+                        .top // No custom app bar space for maps
+                    : MediaQuery.of(context).padding.top +
+                        80, // Account for custom app bar
+            bottom:
+                isMapScreen ? 80 : 0, // Add padding at bottom for map screens
             child: PageView(
               controller: _pageController,
               onPageChanged: _onPageChanged,
+              physics: const BouncingScrollPhysics(),
               children: _screens,
-              physics: BouncingScrollPhysics(),
             ),
           ),
 
-          // Custom App Bar - Floating at top
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 20,
-            right: 20,
-            child: _buildAppBar(isDarkMode, themeProvider),
-          ),
+          // Custom App Bar - Floating at top (hidden for map screens)
+          if (!isMapScreen)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 20,
+              right: 20,
+              child: _buildAppBar(isDarkMode, themeProvider),
+            ),
 
           // Custom Navigation Bar - Floating at bottom
           Positioned(
@@ -214,54 +234,75 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildModernNavigation(bool isDarkMode) {
-    return Container(
-      height: 65,
-      decoration: BoxDecoration(
-        color:
-            isDarkMode
-                ? Colors.black.withOpacity(0.3)
-                : Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 10,
-            offset: Offset(0, 5),
+    // Add shadow and backdrop filter for better contrast against map screens
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Container(
+          height: 65,
+          decoration: BoxDecoration(
+            color:
+                isDarkMode
+                    ? Colors.black.withOpacity(0.5)
+                    : Colors.white.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+            border: Border.all(
+              color:
+                  isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : Colors.white.withOpacity(0.8),
+              width: 1,
+            ),
           ),
-        ],
-        border: Border.all(
-          color:
-              isDarkMode
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.white.withOpacity(0.8),
-          width: 1,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildCustomNavItem(
+                0,
+                Icons.cloud_outlined,
+                Icons.cloud,
+                "Weather",
+                isDarkMode,
+              ),
+              _buildCustomNavItem(
+                1,
+                Icons.air_outlined,
+                Icons.air,
+                "Air Quality",
+                isDarkMode,
+              ),
+              _buildCustomNavItem(
+                2,
+                Icons.api_outlined,
+                Icons.api,
+                "Stations",
+                isDarkMode,
+              ),
+              _buildCustomNavItem(
+                3,
+                Icons.map_outlined,
+                Icons.map,
+                "Weather Map",
+                isDarkMode,
+              ),
+              _buildCustomNavItem(
+                4,
+                Icons.public_outlined,
+                Icons.public,
+                "AQI Map",
+                isDarkMode,
+              ),
+            ],
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildCustomNavItem(
-            0,
-            Icons.cloud_outlined,
-            Icons.cloud,
-            "Weather",
-            isDarkMode,
-          ),
-          _buildCustomNavItem(
-            1,
-            Icons.air_outlined,
-            Icons.air,
-            "Air Quality",
-            isDarkMode,
-          ),
-          _buildCustomNavItem(
-            2,
-            Icons.api_outlined,
-            Icons.api,
-            "Stations",
-            isDarkMode,
-          ),
-        ],
       ),
     );
   }

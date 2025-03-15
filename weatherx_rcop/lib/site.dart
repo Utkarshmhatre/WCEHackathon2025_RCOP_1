@@ -25,7 +25,7 @@ class Site {
       city: json['city'] ?? 'Unknown',
       lat: json['lat'],
       lon: json['lon'],
-      avg: json['avg'] != null ? json['avg'].toDouble() : null,
+      avg: json['avg']?.toDouble(),
       conditions: json['conditions'], // Parse conditions from JSON
     );
   }

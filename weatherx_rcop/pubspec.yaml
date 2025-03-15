@@ -17,7 +17,8 @@ dependencies:
   lottie: ^3.3.1
   intl: ^0.20.2
   provider: ^6.1.2
-  webview_flutter: ^4.4.2 # Add webview dependency
+  webview_flutter: ^4.4.2
+  fl_chart: ^0.65.0 # Updated to the latest version
 
 dev_dependencies:
   flutter_test:
@@ -28,4 +29,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/site_ids.json # Ensure this JSON file exists in assets folder
+    - assets/site_ids.json

@@ -1,16 +1,39 @@
-# weatherx_rcop
+# WeatherX App
 
-A new Flutter project.
+A comprehensive weather application with forecasting, air quality monitoring, and weather station data.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Weather Forecast**: Get current weather information for your location and search for other cities
+- **Air Quality Monitoring**: View detailed air quality data including AQI, pollutants, and forecasts
+- **Weather Stations**: Access data from multiple weather monitoring stations
 
-A few resources to get you started if this is your first Flutter project:
+## API Integration
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This app uses the following APIs:
+- OpenWeatherMap Weather API
+- OpenWeatherMap Air Pollution API
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Setup Instructions
+
+1. Clone the repository
+2. Make sure you have Flutter installed
+3. Run `flutter pub get` to install dependencies
+4. Get an API key from [OpenWeatherMap](https://openweathermap.org/api)
+5. Add your API key in the appropriate services files
+6. Run the app with `flutter run`
+
+## Dependencies
+
+- flutter
+- http
+- geolocator
+- geocoding
+- lottie
+- intl
+- provider
+- webview_flutter
+
+## License
+
+This project is open-source and available under the MIT License.
