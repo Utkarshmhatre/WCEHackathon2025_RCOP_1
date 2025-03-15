@@ -4,14 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:geocoding/geocoding.dart';
-import 'dart:ui';
 import 'dart:async'; // Add this import for debounce timer
 import '../services/weather_service.dart';
 import 'models/air_quality_model.dart';
 import 'theme_provider.dart';
 import 'widgets/pollutant_card.dart';
-import 'widgets/aqi_gauge.dart';
-import 'widgets/air_quality_chart.dart';
 import 'widgets/aqi_rating.dart';
 import 'widgets/pollutant_info_dialog.dart';
 import 'widgets/air_quality_explainer.dart';
@@ -50,7 +47,7 @@ class _AirQualityScreenState extends State<AirQualityScreen>
   List<String> _searchSuggestions = [];
   bool _showSuggestions = false;
   Timer? _debounceTimer;
-  FocusNode _searchFocusNode = FocusNode();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
